@@ -1,138 +1,203 @@
-// Grab data from keys.js
 require("dotenv").config();
-var keys = require('./keys.js');
+var fs = require("fs");
+var keys = require("./keys.js");
 var request = require('request');
-var Spotify = require("node-spotify-api");
-var fs = require('fs');
+var Spotify = require('node-spotify-api');
+var spotify = new Spotify(keys.spotify);
 
-// Stored arguement's array
-var nodeArgv = process.argv;
-var command = process.argv[2];
-// movie or song
-var x = "";
-// attaches multiple word arguements
-for (var i=3; i<nodeArgv.length; i++){
-    if( i>3 && i<nodeArgv.length){
-        x = x + "+" + nodeArgv[i];
-    } else{
-        x = x + nodeArgv[i];
-    }
+
+var action = process.argv[2];
+var parameter = process.argv[3];
+
+
+
+
+function switchCase() {
+
+  switch (action) {
+
+    case 'concert-this':
+      bandsInTown(parameter);                   
+      break;                          
+
+    case 'spotify-this-song':
+      spotSong(parameter);
+      break;
+
+    case 'movie-this':
+      movieInfo(parameter);
+      break;
+
+    case 'do-what-it-says':
+      getRandom();
+      break;
+
+      default:                            
+      logIt("Invalid Instruction");
+      break;
+
+  }
+};
+
+function bandsInTown(parameter){
+
+if (action === 'concert-this')
+{
+	var movieName="";
+	for (var i = 3; i < process.argv.length; i++)
+	{
+		movieName+=process.argv[i];
+	}
+	console.log(movieName);
+}
+else
+{
+	movieName = parameter;
 }
 
-// switch case
-switch(command) {
- 
-    case "concert-this":
-    if(x){
-        spotifySong(x);
-    } else {
-        spotifySong("Korn");
-    }
-    break;
 
-    case "spotify-this-song":
-    if(x){
-        spotifySong(x);
-    } else {
-        spotifySong("Flourescent Adolescent");
-    }
-    break;
 
-    case "movie-this":
-    if(x) {
-        omdbData(x)
-      } else {
-          omdbData("Mr.Nobody")
+var queryUrl = "https://rest.bandsintown.com/artists/"+movieName+"/events?app_id=codecademy";
+
+
+request(queryUrl, function(error, response, body) {
+
+  if (!error && response.statusCode === 200) {
+
+    var JS = JSON.parse(body);
+    for (i = 0; i < JS.length; i++)
+    {
+      var dTime = JS[i].datetime;
+        var month = dTime.substring(5,7);
+        var year = dTime.substring(0,4);
+        var day = dTime.substring(8,10);
+        var dateForm = month + "/" + day + "/" + year
+  
+      logIt("\n---------------------------------------------------\n");
+
+        
+      logIt("Date: " + dateForm);
+      logIt("Name: " + JS[i].venue.name);
+      logIt("City: " + JS[i].venue.city);
+      if (JS[i].venue.region !== "")
+      {
+        logIt("Country: " + JS[i].venue.region);
       }
-    break;
+      logIt("Country: " + JS[i].venue.country);
+      logIt("\n---------------------------------------------------\n");
 
-  case "do-what-it-says":
-  doThing();  
-  break;
-
-
-  default:
-    console.log("{Please enter a command: spotify-this-song, movie-this, do-what-it-says}");
-    break;
+    }
+  }
+});
 }
+function spotSong(parameter) {
 
-function spotifySong(song){
-    spotify.search({ type: 'track', query: song}, function(error, data){
-        if(!error) {
-            for(var i = 0; i < data.tracks.items.length; i++) {
-                var songData = data.tracks.items[i];
-                // artist
-                console.log('Artist: ' + songData.artists[0].name);
-                // song name
-                console.log("Song: " + songData.name);
-                // spotify preview link
-                console.log("Preview URL: " + songData.preview_url);
-                // album name
-                console.log("ALbum: " + songData.album.name);
-                console.log("---------------------");
 
-                // adds text to log.txt
-                fs.appendFile('log.txt', songData.artists[0].name);
-                fs.appendFile('log.txt', songData.name);
-                fs.appendFile('log.txt', songData.preview_url);
-                fs.appendFile('log.txt', songData.album.name);
-                fs.appendFile('log.txt',"--------------------");
-            }
-        }else {
-            console.log('Error occured.');
-        }
+  var searchTrack;
+  if (parameter === undefined) {
+    searchTrack = "The Sign ace of base";
+  } else {
+    searchTrack = parameter;
+  }
+
+  spotify.search({
+    type: 'track',
+    query: searchTrack
+  }, function(error, data) {
+    if (error) {
+      logIt('Error occurred: ' + error);
+      return;
+    } else {
+      logIt("\n---------------------------------------------------\n");
+      logIt("Artist: " + data.tracks.items[0].artists[0].name);
+      logIt("Song: " + data.tracks.items[0].name);
+      logIt("Preview: " + data.tracks.items[3].preview_url);
+      logIt("Album: " + data.tracks.items[0].album.name);
+      logIt("\n---------------------------------------------------\n");
+      
+    }
+  });
+};
+function movieInfo(parameter) {
+
+
+  var findMovie;
+  if (parameter === undefined) {
+    findMovie = "Mr. Nobody";
+  } else {
+    findMovie = parameter;
+  };
+
+  var queryUrl = "http://www.omdbapi.com/?t=" + findMovie + "&y=&plot=short&apikey=trilogy";
+  
+  request(queryUrl, function(err, res, body) {
+  	var bodyOf = JSON.parse(body);
+    if (!err && res.statusCode === 200) {
+      logIt("\n---------------------------------------------------\n");
+      logIt("Title: " + bodyOf.Title);
+      logIt("Release Year: " + bodyOf.Year);
+      logIt("IMDB Rating: " + bodyOf.imdbRating);
+      logIt("Rotten Tomatoes Rating: " + bodyOf.Ratings[1].Value); 
+      logIt("Country: " + bodyOf.Country);
+      logIt("Language: " + bodyOf.Language);
+      logIt("Plot: " + bodyOf.Plot);
+      logIt("Actors: " + bodyOf.Actors);
+      logIt("\n---------------------------------------------------\n");
+    }
+  });
+};
+
+function getRandom() {
+fs.readFile('random.txt', "utf8", function(error, data){
+
+    if (error) {
+        return logIt(error);
+      }
+
+  
+    var dataArr = data.split(",");
+    
+    if (dataArr[0] === "spotify-this-song") 
+    {
+      var songcheck = dataArr[1].trim().slice(1, -1);
+      spotSong(songcheck);
+    } 
+    else if (dataArr[0] === "concert-this") 
+    { 
+      if (dataArr[1].charAt(1) === "'")
+      {
+      	var dLength = dataArr[1].length - 1;
+      	var data = dataArr[1].substring(2,dLength);
+      	console.log(data);
+      	bandsInTown(data);
+      }
+      else
+      {
+	      var bandName = dataArr[1].trim();
+	      console.log(bandName);
+	      bandsInTown(bandName);
+	  }
+  	  
+    } 
+    else if(dataArr[0] === "movie-this") 
+    {
+      var movie_name = dataArr[1].trim().slice(1, -1);
+      movieInfo(movie_name);
+    } 
+    
     });
+
+};
+
+function logIt(dataToLog) {
+
+	console.log(dataToLog);
+
+	fs.appendFile('log.txt', dataToLog + '\n', function(err) {
+		
+		if (err) return logIt('Error logging data to file: ' + err);	
+	});
 }
 
-function omdbData(movie){
-    var omdbURL = 'http://www.omdbapi.com/?t=' + movie + '&plot=short*tomatoes=true';
 
-    request(omdbURL, function(error, response, body){
-        if(!error & response.statusCode == 200) {
-            var body = JSON.parse(body);
-
-            console.log("Title: " + body.Title);
-            console.log("Release Year: " + body.Year);
-            console.log("IMdB Rating: " + body.imdbRating);
-            console.log("Country: " + body.Country);
-            console.log("Language: "+ body.Language);
-            console.log("Plot: " + body.Plot);
-            console.log("Actors: " + body.Actors);
-            console.log("Rotten Tomatoes RatingL " + body.tomatoRating);
-            console.log("Rotten Tomatoes URL:" + body. tomatoRating); 
-            
-            // adds text to log.txt
-            fs.appendFile('log.txt', "Title: " + body.Title);
-            fs.appendFile('log.txt', "Release Year: " + body.Year);
-            fs.appendFile('log.txt', "IMdB Rating: " + body.imdbRating);
-            fs.appendFile('log.txt', "Country: " + body.Country);
-            fs.appendFile('log.txt', "Language: " + body.Language);
-            fs.appendFile('log.txt', "Plot: " + body.Plot);
-            fs.appendFile('log.txt', "Actors: " + body.Actors);
-            fs.appendFile('log.txt', "Rotten Tomatoes Rating: " + body.tomatoRating);
-            fs.appendFile('log.txt', "Rotten Tomatoes URL: " + body.tomatoURL);
-
-        }else{
-            console.log('Error occured.')
-        }
-        if(movie === "Mr.Nobody") {
-            console.log("--------------------");
-            console.log("if you haven't watched 'Mr.Nobody,' then you should: http://www.imdb.com/title/tt0485947/");
-            console.log ("It's on Netflix!");
-
-            // adds text to log.txt
-            fs.appendFile('log.txt' , "---------------------");
-            fs.appendFile('log.txt', "If you haven't watched 'Mr.Nobody, then you should: http://www.imdb.com/title/tt0485947/");
-            fs.appendFile('log.txt', "It's on Netflix!");
-        }
-    });
-
-}
-
-function doThing(){
-    fs.readFile('random.txt', "utf8", function(error, data) {
-        var txt = data.split(',');
-
-        spotifySong(txt[1]);
-    });
-}
+switchCase();
