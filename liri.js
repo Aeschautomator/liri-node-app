@@ -2,9 +2,7 @@
 require("dotenv").config();
 var keys = require('./keys.js');
 var request = require('request');
-var twitter = require('twitter');
-var spotify = require('spotify');
-var client = new twitter(keys.twitterKeys);
+var spotify = new Spotify(keys.spotify);
 var fs = require('fs');
 
 // Stored arguement's array
@@ -23,8 +21,13 @@ for (var i=3; i<nodeArgv.length; i++){
 
 // switch case
 switch(command) {
-    case "my-tweets":
-    showTweets();
+ 
+    case "concert-this":
+    if(x){
+        spotifySong(x);
+    } else {
+        spotifySong("Korn");
+    }
     break;
 
     case "spotify-this-song":
@@ -49,28 +52,8 @@ switch(command) {
 
 
   default:
-    console.log("{Please enter a command: my-tweets, spotify-this-song, movie-this, do-what-it-says}");
+    console.log("{Please enter a command: spotify-this-song, movie-this, do-what-it-says}");
     break;
-}
-
-function showTweets() {
-    // Display last 20 Tweets
-    var screenName = { screen_name:''};
-    client.get('statuses/user_timeline', screenName, function(error, tweets, response){
-        if(!error) {
-            for(var i = 0;  i<tweets.length; i++){
-                var date = tweets[i].created_at;
-               console.log("@Twitternamehere: " + tweets[i].text + " Created At: " + Date.substring(0,19));
-                console.log("--------------------");
-
-                // adds text to log.txt file
-                fs.appendFile('log.txt', "@twitternamehere: " + "Created At: " + date.substring(0,19));
-                fs.appendFile('log.txt', "--------------------");
-            }
-        }else{
-            console.log('Error occurred');
-        }
-    });
 }
 
 function spotifySong(song){

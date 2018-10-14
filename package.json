@@ -19,5 +19,6 @@
   "homepage": "https://github.com/Hordakai/liri-node-app#readme",
   "dependencies": {
     "request": "^2.88.0"
-  }
+  },
+  "devDependencies": {}
 }
